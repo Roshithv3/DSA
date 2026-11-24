@@ -1,19 +1,20 @@
 # Elementary Sorting Algorithms
 
-This guide explains the inner workings, loop mechanics, and complexity analysis for the three elementary comparison-based sorting algorithms: **Bubble Sort**, **Selection Sort**, and **Insertion Sort**.
-
-Each algorithm is broken down by its **exact loop bounds**, explaining **why each loop starts and ends where it does**, followed by an index trace and evaluation against the **5 Criteria for Analysis**:
-1. **Number of Comparisons**
-2. **Number of Swaps / Shifts**
-3. **Adaptive**
-4. **Stable**
-5. **Extra Memory**
-
 ---
 
 ## 1. Bubble Sort
 
-### ⚙️ Core Loop Logic
+### 💡 Core Intuition
+Scan left to right, comparing adjacent pairs. If `arr[j] > arr[j + 1]`, swap them. This pushes the **largest unsorted element** to the end after each pass. The sorted section grows from the right. If a full pass makes zero swaps, the array is already sorted — stop early.
+
+### 📋 Algorithm
+1. For `i` from `0` to `n - 1` (`i < n - 1`):
+   * Set `swapped = false`.
+   * For `j` from `0` to `n - 1 - i` (`j < n - 1 - i`):
+     * If `arr[j] > arr[j + 1]`, swap them, set `swapped = true`.
+   * If `swapped == false`, break.
+
+### ⚙️ Code
 ```java
 for (int i = 0; i < n - 1; i++) {
     boolean swapped = false;
@@ -29,72 +30,43 @@ for (int i = 0; i < n - 1; i++) {
 }
 ```
 
-### 🧠 Loop Bound Intuition (Why these exact indices?)
+### 🧠 Why These Loop Bounds?
+* **`i < n - 1`:** After placing `n - 1` elements in their final positions, the last remaining element at index `0` is automatically correct. No need to run a pass for it.
+* **`j < n - 1 - i`:**
+  * `- 1` → We access `arr[j + 1]`. If `j` reached `n - 1`, `arr[n]` would be out of bounds.
+  * `- i` → After `i` passes, the last `i` elements are already sorted. Skip them.
+* **`swapped` flag:** If a full pass has zero swaps, every pair satisfies `arr[j] <= arr[j + 1]` — the array is sorted. Exit in O(n).
 
-1. **Why Outer Loop is `i < n - 1` (Why stop before the last element?):**
-   * In each pass `i`, one element is guaranteed to reach its final sorted position at the end.
-   * After placing `n - 1` elements in their correct positions, there is only **1 element left** at index `0`.
-   * An element by itself has nothing left to be compared with and is already in its correct spot. Running the loop for `i = n - 1` would be completely redundant.
-
-2. **Why Inner Loop is `j < n - 1 - i` (Why `n - 1 - i`?):**
-   * **The `- 1` part:** We compare `arr[j]` with `arr[j + 1]`. If `j` were allowed to reach `n - 1`, then `j + 1` would access index `n`, throwing an `ArrayIndexOutOfBoundsException`.
-   * **The `- i` part:** After pass `0`, the 1 largest element is locked at index `n - 1`. After pass `1`, the 2 largest elements are locked at indices `n - 2` and `n - 1`. After `i` passes, the last `i` elements are already fully sorted. Subtracting `i` skips those already-sorted positions so we never do useless comparisons on them.
-
-3. **Why the `swapped` flag?**
-   * If an entire inner loop pass finishes with `swapped == false`, it means for every single adjacent pair, `arr[j] <= arr[j + 1]`.
-   * This proves the array is already sorted, allowing us to `break` immediately in **O(n)** time rather than wasting O(n²) iterations.
-
----
-
-### 📝 Step-by-Step Index Trace
-Array: `arr = [5, 1, 4, 2, 8]`, `n = 5`
-
-* **Pass `i = 0` (Inner loop runs for `j = 0` to `j < 5 - 1 - 0 = 4`):**
-  * `j = 0`: Compare `arr[0]` (5) and `arr[1]` (1) → 5 > 1 → Swap → `[1, 5, 4, 2, 8]`
-  * `j = 1`: Compare `arr[1]` (5) and `arr[2]` (4) → 5 > 4 → Swap → `[1, 4, 5, 2, 8]`
-  * `j = 2`: Compare `arr[2]` (5) and `arr[3]` (2) → 5 > 2 → Swap → `[1, 4, 2, 5, 8]`
-  * `j = 3`: Compare `arr[3]` (5) and `arr[4]` (8) → 5 < 8 → No swap → `[1, 4, 2, 5, 8]`  
-    *(Largest element `8` is now locked at index 4)*
-
-* **Pass `i = 1` (Inner loop runs for `j = 0` to `j < 5 - 1 - 1 = 3`):**
-  * `j = 0`: Compare `arr[0]` (1) and `arr[1]` (4) → 1 < 4 → No swap
-  * `j = 1`: Compare `arr[1]` (4) and `arr[2]` (2) → 4 > 2 → Swap → `[1, 2, 4, 5, 8]`
-  * `j = 2`: Compare `arr[2]` (4) and `arr[3]` (5) → 4 < 5 → No swap  
-    *(Second largest element `5` is now locked at index 3)*
-
-* **Pass `i = 2` (Inner loop runs for `j = 0` to `j < 5 - 1 - 2 = 2`):**
-  * `j = 0`: Compare `arr[0]` (1) and `arr[1]` (2) → 1 < 2 → No swap
-  * `j = 1`: Compare `arr[1]` (2) and `arr[2]` (4) → 2 < 4 → No swap  
-    *(Zero swaps occurred → `swapped` is false → `break`)*
-
----
+### 📝 Trace: `[5, 1, 4, 2, 8]`
+* **i=0** (j < 4): swap(5,1), swap(5,4), swap(5,2), skip(5,8) → `[1, 4, 2, 5, 8]` — 8 locked
+* **i=1** (j < 3): skip(1,4), swap(4,2), skip(4,5) → `[1, 2, 4, 5, 8]` — 5 locked
+* **i=2** (j < 2): skip(1,2), skip(2,4) → no swaps → **break** ✅
 
 ### 🔍 Criteria for Analysis
 
-1. **Number of Comparisons:**
-   * **Best Case:** `n - 1` = **O(n)** (array already sorted; first pass makes `n - 1` comparisons and breaks).
-   * **Worst / Average Case:** `(n - 1) + (n - 2) + ... + 1 = n(n - 1)/2` = **O(n²)** comparisons.
-2. **Number of Swaps:**
-   * **Best Case:** `0` = **O(1)** (when already sorted).
-   * **Worst Case:** `n(n - 1)/2` = **O(n²)** (when reverse sorted, every comparison requires a swap).
-   * **Average Case:** `≈ n(n - 1)/4` = **O(n²)**.
-3. **Adaptive:**
-   * **Yes** (via `swapped` flag). It adapts to pre-existing order and finishes in **O(n)** time on sorted input.
-4. **Stable:**
-   * **Yes**. It only swaps when `arr[j] > arr[j + 1]`. When elements are equal (`arr[j] == arr[j + 1]`), no swap occurs, preserving their original order.
-5. **Extra Memory:**
-   * **O(1) (In-place)**. Only uses a couple of variables (`temp`, `swapped`).
-
-#### ⏱ Time Complexity Summary:
-* **Best Case:** **O(n)**
-* **Average Case:** **O(n²)**
-* **Worst Case:** **O(n²)**
+| Criteria | Details |
+| :--- | :--- |
+| **Comparisons** | Best: `n - 1` = **O(n)**. Worst/Avg: `n(n-1)/2` = **O(n²)** |
+| **Swaps** | Best: `0`. Worst: `n(n-1)/2` = **O(n²)** |
+| **Adaptive** | **Yes** — `swapped` flag gives O(n) on sorted input |
+| **Stable** | **Yes** — only swaps when `arr[j] > arr[j+1]`, equals are never swapped |
+| **Extra Memory** | **O(1)** In-place |
 
 ---
 
 ## 2. Selection Sort
 
-### ⚙️ Core Loop Logic
+### 💡 Core Intuition
+Divide the array into a **sorted part** (left, initially empty) and an **unsorted part** (right, initially the full array). Each pass scans the unsorted part to find the **minimum element**, then swaps it into position `i` — the first slot of the unsorted part. One swap per pass, at most `n - 1` swaps total.
+
+### 📋 Algorithm
+1. For `i` from `0` to `n - 1` (`i < n - 1`):
+   * Set `minIdx = i`.
+   * For `j` from `i + 1` to `n` (`j < n`):
+     * If `arr[j] < arr[minIdx]`, update `minIdx = j`.
+   * If `minIdx != i`, swap `arr[i]` with `arr[minIdx]`.
+
+### ⚙️ Code
 ```java
 for (int i = 0; i < n - 1; i++) {
     int minIdx = i;
@@ -111,78 +83,43 @@ for (int i = 0; i < n - 1; i++) {
 }
 ```
 
-### 🧠 Loop Bound Intuition (Why these exact indices?)
+### 🧠 Why These Loop Bounds?
+* **`i < n - 1`:** After filling indices `0` through `n - 2`, only 1 element remains at `n - 1`. It must be the largest — nothing left to compare or swap.
+* **`j = i + 1` to `n`:** Elements before `i` are finalized. We set `minIdx = i` as the initial guess, so we only need to check `i + 1` onward for anything smaller.
+* **Swap outside inner loop:** The inner loop only tracks `minIdx` (an integer). The actual swap happens once per pass — this is why Selection Sort has minimal writes.
 
-1. **Why Outer Loop is `i < n - 1` (Why not `n`?):**
-   * The outer loop index `i` marks the current target boundary. Everything before index `i` (`arr[0 ... i - 1]`) is already sorted and in its final place.
-   * Once we place elements into indices `0, 1, 2, ..., n - 2`, there is only **1 element remaining** at index `n - 1`.
-   * That last element has to be the largest element in the entire array. There are no other elements left to compare it with, so running the loop for index `n - 1` is unnecessary.
-
-2. **Why Inner Loop starts at `j = i + 1` and runs to `n`:**
-   * `arr[0 ... i - 1]` is already completely sorted. We must not touch those elements.
-   * We initialize `minIdx = i`, assuming the current element at index `i` is the minimum.
-   * Therefore, we only need to compare `arr[minIdx]` with the remaining unsorted elements starting from `i + 1` to `n - 1` to find if a smaller element exists.
-
-3. **Why Swap is Outside the Inner Loop:**
-   * Selection Sort does **not** swap adjacent elements while scanning.
-   * The inner loop only updates an integer index (`minIdx`).
-   * The actual swap happens at most **once per outer loop iteration**, directly placing the minimum element into index `i`.
-
----
-
-### 📝 Step-by-Step Index Trace
-Array: `arr = [64, 25, 12, 22, 11]`, `n = 5`
-
-* **Pass `i = 0`:**
-  * Assume `minIdx = 0` (value 64).
-  * Scan `j = 1` to `4`: finds smallest element is `11` at index `minIdx = 4`.
-  * Swap `arr[0]` (64) with `arr[4]` (11) → `[11, 25, 12, 22, 64]` *(index 0 finalized)*
-
-* **Pass `i = 1`:**
-  * Assume `minIdx = 1` (value 25).
-  * Scan `j = 2` to `4`: finds smallest element is `12` at index `minIdx = 2`.
-  * Swap `arr[1]` (25) with `arr[2]` (12) → `[11, 12, 25, 22, 64]` *(indices 0, 1 finalized)*
-
-* **Pass `i = 2`:**
-  * Assume `minIdx = 2` (value 25).
-  * Scan `j = 3` to `4`: finds smallest element is `22` at index `minIdx = 3`.
-  * Swap `arr[2]` (25) with `arr[3]` (22) → `[11, 12, 22, 25, 64]` *(indices 0, 1, 2 finalized)*
-
-* **Pass `i = 3`:**
-  * Assume `minIdx = 3` (value 25).
-  * Scan `j = 4`: compare 25 with 64 → `minIdx` remains 3.
-  * `minIdx == i`, so no swap needed.
-  * Final Sorted Array: `[11, 12, 22, 25, 64]`
-
----
+### 📝 Trace: `[64, 25, 12, 22, 11]`
+* **i=0:** min is 11 at index 4 → swap(64, 11) → `[11, 25, 12, 22, 64]`
+* **i=1:** min is 12 at index 2 → swap(25, 12) → `[11, 12, 25, 22, 64]`
+* **i=2:** min is 22 at index 3 → swap(25, 22) → `[11, 12, 22, 25, 64]`
+* **i=3:** min is 25 at index 3 → `minIdx == i` → no swap ✅
 
 ### 🔍 Criteria for Analysis
 
-1. **Number of Comparisons:**
-   * **Best, Average, and Worst Case:** Always `(n - 1) + (n - 2) + ... + 1 = n(n - 1)/2` = **O(n²)** comparisons.
-   * It always executes every comparison because it has no mechanism to know if the remaining subarray is already sorted.
-2. **Number of Swaps:**
-   * **Best Case:** `0` = **O(1)** (when already sorted).
-   * **Worst / Average Case:** At most `n - 1` = **O(n)** swaps.
-   * **Key Strength:** It makes at most `n - 1` swaps. When writing to memory is extremely slow or wears out hardware (e.g. EEPROM / flash memory), Selection Sort minimizes memory writes better than Bubble or Insertion Sort.
-3. **Adaptive:**
-   * **No**. It does not adapt to pre-sorted input; it always takes O(n²) time.
-4. **Stable:**
-   * **No (Unstable)**. Swapping across long distances jumps an element over other equal elements.
-   * *Example:* In `[4a, 4b, 2]`, swapping `4a` with `2` produces `[2, 4b, 4a]`. The relative order of `4a` and `4b` is reversed.
-5. **Extra Memory:**
-   * **O(1) (In-place)**. Requires only a few variables (`minIdx`, `temp`).
-
-#### ⏱ Time Complexity Summary:
-* **Best Case:** **O(n²)**
-* **Average Case:** **O(n²)**
-* **Worst Case:** **O(n²)**
+| Criteria | Details |
+| :--- | :--- |
+| **Comparisons** | Best/Avg/Worst: Always `n(n-1)/2` = **O(n²)** — must scan to find min every time |
+| **Swaps** | Best: `0`. Worst: `n - 1` = **O(n)** — fewest swaps of any elementary sort |
+| **Adaptive** | **No** — always O(n²) even on sorted input |
+| **Stable** | **No** — long-distance swap can reorder equals (e.g. `[4a, 4b, 2]` → `[2, 4b, 4a]`) |
+| **Extra Memory** | **O(1)** In-place |
 
 ---
 
 ## 3. Insertion Sort
 
-### ⚙️ Core Loop Logic
+### 💡 Core Intuition
+Consider `arr[0]` as already sorted (a single element is trivially sorted). For each next element `key = arr[i]`, scan the sorted portion `arr[0 ... i-1]` **backwards**. Shift every element greater than `key` one position to the right to make room. When you find an element ≤ `key` (or reach the front), drop `key` into the vacant slot. The sorted portion grows by one each pass.
+
+### 📋 Algorithm
+1. For `i` from `1` to `n - 1` (`i < n`):
+   * Store `key = arr[i]`.
+   * Set `j = i - 1`.
+   * While `j >= 0` and `arr[j] > key`:
+     * Shift: `arr[j + 1] = arr[j]`, then `j--`.
+   * Place: `arr[j + 1] = key`.
+
+### ⚙️ Code
 ```java
 for (int i = 1; i < n; i++) {
     int key = arr[i];
@@ -196,91 +133,38 @@ for (int i = 1; i < n; i++) {
 }
 ```
 
-### 🧠 Loop Bound Intuition (Why these exact indices?)
+### 🧠 Why These Loop Bounds?
+* **`i = 1` (not `0`):** `arr[0]` alone is already sorted. The first element that needs inserting is at index `1`.
+* **`j = i - 1`, moving backward (`j--`):** We compare `key` against sorted elements from right to left. If `arr[j] > key`, shift `arr[j]` right. If `arr[j] <= key`, stop — everything to the left is guaranteed smaller. This early exit gives O(n) best case.
+* **`arr[j + 1] = key` (why `j + 1`?):**
+  * If `j == -1`: `key` is the smallest — insert at index `0` = `j + 1`.
+  * If `arr[j] <= key`: insert right after `j` = `j + 1`.
+  * Either way, `j + 1` is the exact vacant slot created by shifting.
 
-1. **Why Outer Loop starts at `i = 1` (Why not `0`?):**
-   * Insertion sort works by growing a sorted portion from left to right.
-   * A subarray of length 1 (`arr[0]`) has no other elements to compare against, so **`arr[0]` is already sorted by definition**.
-   * Therefore, the first element that actually needs to be inserted into a sorted portion is the element at index `1`.
-
-2. **Why Inner Loop starts at `j = i - 1` and moves backward (`j--`):**
-   * Everything to the left of index `i` (`arr[0 ... i - 1]`) is already in sorted order.
-   * We want to find where `key = arr[i]` belongs inside that sorted range.
-   * We start checking from the largest element in the sorted range (`arr[i - 1]`) and move backwards:
-     * If `arr[j] > key`, we shift `arr[j]` one slot to the right (`arr[j + 1] = arr[j]`) to make space.
-     * The moment we find `arr[j] <= key`, we stop immediately because all earlier elements are guaranteed to be smaller!
-
-3. **Why `arr[j + 1] = key` (Why `j + 1`?):**
-   * The `while` loop stops when:
-     1. `j == -1`: `key` was smaller than every element in `arr[0 ... i - 1]`. Its correct position is index `0`, which is `j + 1` (`-1 + 1 = 0`).
-     2. `arr[j] <= key`: we found an element smaller than or equal to `key`. Therefore, `key` belongs immediately to its right, at index `j + 1`.
-   * In both cases, `j + 1` is the exact vacant slot created by shifting.
-
----
-
-### 📝 Step-by-Step Index Trace
-Array: `arr = [8, 3, 5, 2, 4]`, `n = 5`
-
-* **Start:** Subarray `[8]` at index 0 is already sorted.
-
-* **Pass `i = 1` (`key = arr[1] = 3`, `j = 0`):**
-  * Check `j = 0`: `arr[0]` (8) > 3 → Shift 8 right: `arr[1] = 8` → `j` becomes `-1`.
-  * Loop exits (`j >= 0` is false).
-  * Insert at `arr[j + 1]` (`arr[0]`): `arr[0] = 3`.
-  * Array: `[3, 8, 5, 2, 4]` *(Sorted portion: `[3, 8]`)*
-
-* **Pass `i = 2` (`key = arr[2] = 5`, `j = 1`):**
-  * Check `j = 1`: `arr[1]` (8) > 5 → Shift 8 right: `arr[2] = 8` → `j` becomes `0`.
-  * Check `j = 0`: `arr[0]` (3) < 5 → Condition `arr[j] > key` fails → Loop exits.
-  * Insert at `arr[j + 1]` (`arr[1]`): `arr[1] = 5`.
-  * Array: `[3, 5, 8, 2, 4]` *(Sorted portion: `[3, 5, 8]`)*
-
-* **Pass `i = 3` (`key = arr[3] = 2`, `j = 2`):**
-  * Check `j = 2`: 8 > 2 → shift 8 → `j = 1`.
-  * Check `j = 1`: 5 > 2 → shift 5 → `j = 0`.
-  * Check `j = 0`: 3 > 2 → shift 3 → `j = -1`.
-  * Loop exits. Insert at `arr[0] = 2`.
-  * Array: `[2, 3, 5, 8, 4]` *(Sorted portion: `[2, 3, 5, 8]`)*
-
-* **Pass `i = 4` (`key = arr[4] = 4`, `j = 3`):**
-  * Check `j = 3`: 8 > 4 → shift 8 → `j = 2`.
-  * Check `j = 2`: 5 > 4 → shift 5 → `j = 1`.
-  * Check `j = 1`: 3 < 4 → Stop!
-  * Insert at `arr[j + 1]` (`arr[2]`): `arr[2] = 4`.
-  * Final Sorted Array: `[2, 3, 4, 5, 8]`
-
----
+### 📝 Trace: `[8, 3, 5, 2, 4]`
+* **i=1** key=3, j=0: 8>3 shift → j=-1 → insert at 0 → `[3, 8, 5, 2, 4]`
+* **i=2** key=5, j=1: 8>5 shift → j=0: 3<5 stop → insert at 1 → `[3, 5, 8, 2, 4]`
+* **i=3** key=2, j=2: 8>2 shift → j=1: 5>2 shift → j=0: 3>2 shift → j=-1 → insert at 0 → `[2, 3, 5, 8, 4]`
+* **i=4** key=4, j=3: 8>4 shift → j=2: 5>4 shift → j=1: 3<4 stop → insert at 2 → `[2, 3, 4, 5, 8]` ✅
 
 ### 🔍 Criteria for Analysis
 
-1. **Number of Comparisons:**
-   * **Best Case:** `n - 1` = **O(n)** (when already sorted; each element compares once with `arr[i - 1]` and immediately exits the `while` loop).
-   * **Worst Case:** `n(n - 1)/2` = **O(n²)** (when reverse sorted; each element compares against every preceding element).
-   * **Average Case:** `≈ n(n - 1)/4` = **O(n²)**.
-2. **Number of Shifts:**
-   * **Best Case:** `0` shifts = **O(1)** (when already sorted).
-   * **Worst Case:** `n(n - 1)/2` shifts = **O(n²)**.
-   * **Average Case:** `≈ n(n - 1)/4` shifts = **O(n²)**.
-3. **Adaptive:**
-   * **Yes (Naturally Adaptive)**. If the array is already sorted, the `while` condition `arr[j] > key` evaluates to false on the very first comparison for every `i`. It runs in linear time **O(n)** without needing any extra boolean flags.
-4. **Stable:**
-   * **Yes**. The shifting condition is strictly `arr[j] > key`. If an element is equal to `key`, the shift stops and `key` is placed after it, preserving their original order.
-5. **Extra Memory:**
-   * **O(1) (In-place)**. Only uses a single variable `key`.
-
-#### ⏱ Time Complexity Summary:
-* **Best Case:** **O(n)** (Array is already sorted or nearly sorted)
-* **Average Case:** **O(n²)**
-* **Worst Case:** **O(n²)** (Array is reverse sorted)
+| Criteria | Details |
+| :--- | :--- |
+| **Comparisons** | Best: `n - 1` = **O(n)**. Worst/Avg: `n(n-1)/2` = **O(n²)** |
+| **Shifts** | Best: `0`. Worst: `n(n-1)/2` = **O(n²)** |
+| **Adaptive** | **Yes (naturally)** — `while` condition fails immediately on sorted input → O(n) without any flag |
+| **Stable** | **Yes** — shifts only when `arr[j] > key` (strict), equals are never moved past each other |
+| **Extra Memory** | **O(1)** In-place |
 
 ---
 
-## 📊 Summary Comparison: The 5 Criteria for Analysis
+## 📊 Summary Comparison
 
-| Criteria for Analysis | Bubble Sort | Selection Sort | Insertion Sort |
+| Criteria | Bubble Sort | Selection Sort | Insertion Sort |
 | :--- | :--- | :--- | :--- |
-| **1. Number of Comparisons** | **Best:** O(n)<br>**Worst/Avg:** O(n²) | **Best/Worst/Avg:** Always O(n²) | **Best:** O(n)<br>**Worst/Avg:** O(n²) |
-| **2. Number of Swaps / Shifts** | **Best:** 0<br>**Worst/Avg:** O(n²) swaps | **Best:** 0<br>**Worst/Avg:** At most n - 1 swaps (O(n)) | **Best:** 0<br>**Worst/Avg:** O(n²) shifts |
-| **3. Adaptive?** | **Yes** *(with `swapped` flag)* | **No** *(always O(n²))* | **Yes** *(naturally O(n) on sorted)* |
-| **4. Stable?** | **Yes** | **No** *(long-distance swaps break order)* | **Yes** |
-| **5. Extra Memory** | O(1) *(In-place)* | O(1) *(In-place)* | O(1) *(In-place)* |
+| **Comparisons** | Best: O(n), Worst: O(n²) | Always O(n²) | Best: O(n), Worst: O(n²) |
+| **Swaps / Shifts** | Best: 0, Worst: O(n²) | Best: 0, Worst: O(n) swaps | Best: 0, Worst: O(n²) |
+| **Adaptive?** | Yes (swapped flag) | No | Yes (naturally) |
+| **Stable?** | Yes | No | Yes |
+| **Extra Memory** | O(1) | O(1) | O(1) |
